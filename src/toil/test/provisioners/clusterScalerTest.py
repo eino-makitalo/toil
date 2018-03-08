@@ -119,7 +119,8 @@ class ClusterScalerTest(ToilTest):
 
             numberOfJobs = random.choice(list(range(1, 1000)))
             randomJobShapes = [randomJobShape(random.choice(nodeShapes)) for i in range(numberOfJobs)]
-            numberOfBins = binPacking(jobShapes=randomJobShapes, nodeShapes=nodeShapes)
+            numberOfBins = binPacking(jobShapes=randomJobShapes, nodeShapes=nodeShapes,
+                                      goalTime=3600)
             logger.info("Made the following node reservations: %s" % numberOfBins)
 
 
@@ -207,7 +208,7 @@ class ClusterScalerTest(ToilTest):
         config.maxNodes = [10]
 
         # Algorithm parameters
-        config.alphaPacking = 0.0
+        config.alphaTime = 3600
         config.betaInertia = 1.2
         config.scaleInterval = 3
 
@@ -240,7 +241,7 @@ class ClusterScalerTest(ToilTest):
         config.maxNodes = [10, 10] # test expansion of this list
 
         # Algorithm parameters
-        config.alphaPacking = 0.0
+        config.alphaTime = 3600
         config.betaInertia = 1.2
         config.scaleInterval = 3
 
@@ -303,7 +304,7 @@ class ClusterScalerTest(ToilTest):
         config.maxNodes = [10,10]
 
         # Algorithm parameters
-        config.alphaPacking = 0.0
+        config.alphaTime = 3600
         config.betaInertia = 1.2
         config.scaleInterval = 3
 
