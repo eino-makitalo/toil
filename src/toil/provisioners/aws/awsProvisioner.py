@@ -113,24 +113,21 @@ class AWSProvisioner(AbstractProvisioner):
             self.tags = self._getLeader(self.clusterName).tags
             self.masterPublicKey = self._setSSH()
             self.nodeStorage = config.nodeStorage
-            spotBids = []
-            self.nonPreemptableNodeTypes = []
-            self.preemptableNodeTypes = []
+
+            self.spotBids = {}
+            self.nodeShapes = []
+            self.nodeTypes = []
             for nodeTypeStr in config.nodeTypes:
                 nodeBidTuple = nodeTypeStr.split(":")
                 if len(nodeBidTuple) == 2:
                     #This is a preemptable node type, with a spot bid
-                    self.preemptableNodeTypes.append(nodeBidTuple[0])
-                    spotBids.append(nodeBidTuple[1])
+                    nodeType, bid = nodeBidTuple
+                    self.nodeTypes.append(nodeType)
+                    self.nodeShapes.append(self.getNodeShape(nodeType, preemptable=True))
+                    self.spotBids[nodeType] = bid
                 else:
-                    self.nonPreemptableNodeTypes.append(nodeTypeStr)
-            self.preemptableNodeShapes = [self.getNodeShape(nodeType=nodeType, preemptable=True) for nodeType in self.preemptableNodeTypes]
-            self.nonPreemptableNodeShapes = [self.getNodeShape(nodeType=nodeType, preemptable=False) for nodeType in self.nonPreemptableNodeTypes]
-
-            self.nodeShapes = self.nonPreemptableNodeShapes + self.preemptableNodeShapes
-            self.nodeTypes = self.nonPreemptableNodeTypes + self.preemptableNodeTypes
-            self.spotBids = dict(zip(self.preemptableNodeTypes, spotBids))
-
+                    self.nodeTypes.append(nodeTypeStr)
+                    self.nodeShapes.append(self.getNodeShape(nodeType, preemptable=False))
         else:
             self.ctx = None
             self.clusterName = None
@@ -306,7 +303,8 @@ class AWSProvisioner(AbstractProvisioner):
                           image=applianceSelf(),
                           entrypoint=entryPoint,
                           sshKey=self.masterPublicKey,
-                          args=workerArgs.format(ip=self.leaderIP, preemptable=preemptable, keyPath=keyPath))
+                          args=workerArgs.format(ip=self.leaderIP, preemptable=preemptable, keyPath=keyPath,
+                                                 memInMiB=int((instanceType.memory - memoryOverhead) * 1024)))
         userData = awsUserData.format(**workerData)
         sgs = [sg for sg in self.ctx.ec2.get_all_security_groups() if sg.name == self.clusterName]
         kwargs = {'key_name': self.keyName,
